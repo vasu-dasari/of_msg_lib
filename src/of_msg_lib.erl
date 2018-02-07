@@ -30,6 +30,7 @@
 -export([create_message/2,
          create_error/3,
          decode/1,
+         decode/2,
          hello/2,
          echo_request/2,
          echo_reply/3,
@@ -363,15 +364,16 @@ decode(#ofp_message{ version = Version, xid = Xid, body = Body }) when Version <
     {Name, Res} = decode_hello(Body),
     {Name, Xid, Res};
 
-decode(#ofp_message{ version = Version, xid = Xid, body = Body }) when ( Version >= ?V4 ) and ( Version =< ?V5 )->
-    {Name, Res} = (lib_mod(Version)):decode(Body),
-    {Name, Xid, Res};
+decode(#ofp_message{ version = Version, xid = Xid, body = Body }) ->
+    {Name, Res} = decode(Version, Body),
+    {Name, Xid, Res}.
 
-decode(#ofp_message{ xid = Xid, body = Body }) ->
+decode(Version, Body)  when ( Version >= ?V4 ) and ( Version =< ?V5 )->
     % newer unsupported versions of OF protocol.  Assume that
     % the newest version of our OF parser can decode the hello message.
-    {Name, Res} = (lib_mod(4)):decode(Body),
-    {Name, Xid, Res}.
+    (lib_mod(Version)):decode(Body);
+decode(_, Body) ->
+    (lib_mod(4)):decode(Body).
 
 lib_mod(?V4) ->
     of_msg_lib_v4;
